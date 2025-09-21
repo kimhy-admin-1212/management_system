@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tạo QR VietQR & MoMo</title>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .form-box {
+        background: #fff;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        width: 320px;
+      }
+      .form-box label {
+        font-size: 14px;
+        font-weight: bold;
+        display: block;
+        margin-top: 10px;
+      }
+      .form-box input,
+      .form-box select {
+        width: 95%;
+        padding: 8px;
+        margin-top: 4px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 14px;
+      }
+      .warning {
+        margin-top: 6px;
+        font-size: 13px;
+        color: #b91c1c;
+        font-style: italic;
+        display: none;
+      }
+      .tabs {
+        display: flex;
+        margin-bottom: 12px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        width: 320px;
+      }
+      .tab {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: bold;
+        background: #e0e0e0;
+        transition: 0.2s;
+      }
+      .tab.active {
+        background: #006a4e;
+        color: #fff;
+      }
+      .qr-card {
+        width: 320px;
+        border-radius: 20px;
+        padding: 40px 20px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: relative;
+        display: none;
+      }
+      .qr-card.vcb {
+        background: linear-gradient(180deg, #fffff7 0%, #ceffdd 100%);
+      }
+      .qr-card.momo {
+        background-image: url("nen_momo.jpg");
+        background-size: cover;
+        background-position: 50% 47%;
+      }
+      .qr-header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 15px;
+        font-weight: bold;
+        font-size: 16px;
+        color: #006a4e;
+      }
+      .qr-header img {
+        height: 40px;
+        margin-right: 6px;
+      }
+      .qr-image {
+        width: 200px;
+        display: block;
+        margin: 20px auto;
+        border: 6px solid white;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+      .qr-info {
+        font-size: 14px;
+        line-height: 1.4;
+        margin-top: 8px;
+        word-break: break-all;
+      }
+      .qr-extra {
+        font-size: 13px;
+        margin-top: 10px;
+        font-weight: bold;
+        color: #222;
+      }
+      .download-btn {
+        margin-top: 16px;
+        padding: 10px 20px;
+        background: #006a4e;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: 0.2s;
+      }
+      .download-btn:hover {
+        background: #004c36;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="form-box">
+      <label>Ngân hàng</label>
+      <select id="bankSelect" style="width: 100%"></select>
+
+      <label>Số tài khoản</label>
+      <input
+        type="text"
+        id="account"
+        placeholder="Nhập số tài khoản"
+        onblur="showWarning()"
+      />
+      <div id="warningMsg" class="warning">
+        ⚠️ Tên tài khoản sẽ được xác nhận trực tiếp trong ứng dụng ngân hàng khi
+        quét QR. Vui lòng kiểm tra kỹ trước khi chuyển.
+      </div>
+
+      <label>Link nhận tiền MoMo</label>
+      <input
+        type="text"
+        id="momoLink"
+        placeholder="Ví dụ: https://me.momo.vn/nguyentanphat"
+      />
+
+      <label>Số tiền (VND)</label>
+      <input type="number" id="amount" placeholder="Nhập số tiền" />
+
+      <label>Nội dung chuyển khoản</label>
+      <input type="text" id="desc" placeholder="Ví dụ: Thanh toán" />
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" id="tabVCB">Ngân hàng</div>
+      <div class="tab" id="tabMoMo">MoMo</div>
+    </div>
+
+    <!-- VCB Card -->
+    <div id="vcbCardWrapper" class="qr-card vcb" style="display: block">
+      <div class="qr-header"><img id="bankLogo" src="" alt="Bank Logo" /></div>
+      <img id="qrImage" class="qr-image" src="" alt="QR Code Bank" />
+      <div class="qr-info">
+        <div id="accountVCB"></div>
+        <div id="bankNameVCB"></div>
+      </div>
+      <div class="qr-extra" id="vcbExtra"></div>
+    </div>
+
+    <!-- MoMo Card -->
+    <div id="momoCardWrapper" class="qr-card momo">
+      <div class="qr-header">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png"
+          alt="MoMo"
+          style="height: 40px"
+        />
+      </div>
+      <img id="momoQrImage" class="qr-image" alt="QR MoMo" />
+      <div class="qr-info">
+        Link MoMo: <br /><span id="momoLinkText"></span>
+      </div>
+      <div class="qr-extra" id="momoExtra"></div>
+    </div>
+
+    <button class="download-btn" onclick="downloadQR()">Tải QR</button>
+
+    <script>
+      const bankSelect = document.getElementById("bankSelect");
+      const accountInput = document.getElementById("account");
+      const momoLinkInput = document.getElementById("momoLink");
+      const amountInput = document.getElementById("amount");
+      const descInput = document.getElementById("desc");
+      const warningMsg = document.getElementById("warningMsg");
+
+      const qrImage = document.getElementById("qrImage");
+      const momoQrImage = document.getElementById("momoQrImage");
+      const momoLinkText = document.getElementById("momoLinkText");
+
+      const accountVCB = document.getElementById("accountVCB");
+      const bankNameVCB = document.getElementById("bankNameVCB");
+      const bankLogo = document.getElementById("bankLogo");
+      const vcbExtra = document.getElementById("vcbExtra");
+      const momoExtra = document.getElementById("momoExtra");
+
+      const vcbCardWrapper = document.getElementById("vcbCardWrapper");
+      const momoCardWrapper = document.getElementById("momoCardWrapper");
+      const tabVCB = document.getElementById("tabVCB");
+      const tabMoMo = document.getElementById("tabMoMo");
+
+      let bankList = [];
+      let currentTab = "VCB";
+
+      // Load bank list VietQR
+      fetch("https://api.vietqr.io/v2/banks")
+        .then((res) => res.json())
+        .then((data) => {
+          bankList = data.data;
+          bankList.forEach((bank) => {
+            const opt = document.createElement("option");
+            opt.value = bank.bin;
+            opt.dataset.name = bank.shortName;
+            opt.dataset.logo = bank.logo;
+            opt.textContent = bank.shortName;
+            bankSelect.appendChild(opt);
+          });
+          updateQR();
+        });
+
+      function showWarning() {
+        warningMsg.style.display =
+          accountInput.value.trim() !== "" ? "block" : "none";
+        updateQR();
+      }
+
+      function formatCurrency(num) {
+        return Number(num || 0).toLocaleString("vi-VN");
+      }
+
+      function numberToWords(num) {
+        if (!num) return "";
+        const ChuSo = [
+          "không",
+          "một",
+          "hai",
+          "ba",
+          "bốn",
+          "năm",
+          "sáu",
+          "bảy",
+          "tám",
+          "chín",
+        ];
+        const Tien = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+        function docSo3ChuSo(baso) {
+          let tram = parseInt(baso / 100),
+            chuc = parseInt((baso % 100) / 10),
+            donvi = baso % 10,
+            kq = "";
+          if (tram != 0) {
+            kq += ChuSo[tram] + " trăm ";
+            if (chuc == 0 && donvi != 0) kq += "lẻ ";
+          }
+          if (chuc != 0 && chuc != 1) kq += "" + ChuSo[chuc] + " mươi ";
+          if (chuc == 1) kq += "mười ";
+          if (donvi != 0)
+            kq +=
+              donvi == 1 && chuc != 0 && chuc != 1
+                ? "mốt"
+                : donvi == 5 && chuc != 0
+                ? "lăm"
+                : ChuSo[donvi];
+          return kq;
+        }
+        let so = num,
+          i = 0,
+          kq = "";
+        if (so == 0) return ChuSo[0];
+        while (so > 0) {
+          let baso = so % 1000;
+          so = parseInt(so / 1000);
+          let tmp = docSo3ChuSo(baso);
+          if (tmp != "") kq = tmp + " " + Tien[i] + " " + kq;
+          i++;
+        }
+        return kq.trim() + " đồng";
+      }
+
+      function updateQR() {
+        const bank = bankSelect.value;
+        const selected = bankSelect.options[bankSelect.selectedIndex];
+        const bankName = selected?.dataset.name || "";
+        const logo = selected?.dataset.logo || "";
+
+        const account = accountInput.value.trim();
+        const momoBaseLink = momoLinkInput.value.trim();
+        const amount = Number(amountInput.value) || 0;
+        const desc = descInput.value.trim();
+
+        accountVCB.textContent = account;
+        bankNameVCB.textContent = "Ngân hàng " + bankName;
+        bankLogo.src = logo;
+
+        // QR Ngân hàng
+        if (bank && account) {
+          const qrUrl = `https://img.vietqr.io/image/${bank}-${account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(
+            desc
+          )}`;
+          qrImage.crossOrigin = "anonymous";
+          qrImage.src = qrUrl;
+        } else qrImage.src = "";
+
+        // QR MoMo tự động cộng thêm 7%
+        if (momoBaseLink) {
+          let momoAmount = amount > 0 ? Math.ceil(amount * 1.07) : 0; // +7%
+          const momoFullLink = `${momoBaseLink}`;
+          momoQrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+            momoFullLink
+          )}`;
+          momoLinkText.textContent = momoFullLink;
+
+          const amountFormattedMoMo = formatCurrency(momoAmount);
+          const amountTextMoMo = numberToWords(momoAmount).toUpperCase();
+          momoExtra.innerHTML = `<span>-----------------------------------------------------</span>
+            <br>Số tiền: <b>${amountFormattedMoMo} VND</b><br>Bằng chữ: <i>${amountTextMoMo}</i><br><br>Nội dung: <b>${desc}</b>`;
+        } else {
+          momoQrImage.src = "";
+          momoLinkText.textContent = "";
+          momoExtra.innerHTML = "";
+        }
+
+        // VietQR giữ nguyên số gốc
+        const amountFormatted = formatCurrency(amount);
+        const amountText = numberToWords(amount).toUpperCase();
+        vcbExtra.innerHTML = `<span>-----------------------------------------------------</span>
+          <br>Số tiền: <b>${amountFormatted} VND</b><br>Bằng chữ: <i>${amountText}</i><br><br>Nội dung: <b>${desc}</b>`;
+      }
+
+      [bankSelect, accountInput, momoLinkInput, amountInput, descInput].forEach(
+        (input) => {
+          input.addEventListener("input", updateQR);
+          input.addEventListener("change", updateQR);
+        }
+      );
+
+      tabVCB.addEventListener("click", () => {
+        currentTab = "VCB";
+        vcbCardWrapper.style.display = "block";
+        momoCardWrapper.style.display = "none";
+        tabVCB.classList.add("active");
+        tabMoMo.classList.remove("active");
+      });
+
+      tabMoMo.addEventListener("click", () => {
+        currentTab = "MoMo";
+        vcbCardWrapper.style.display = "none";
+        momoCardWrapper.style.display = "block";
+        tabMoMo.classList.add("active");
+        tabVCB.classList.remove("active");
+      });
+
+      function downloadQR() {
+        const targetCard =
+          currentTab === "VCB" ? vcbCardWrapper : momoCardWrapper;
+        html2canvas(targetCard, { scale: 3, useCORS: true }).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = currentTab + "-QR.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        });
+      }
+    </script>
+  </body>
+</html>
