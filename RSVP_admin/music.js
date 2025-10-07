@@ -123,7 +123,7 @@ let supabase; // 👈 biến toàn cục
   };
   window.saveNewTheme = async function () {
     const name_display = document.getElementById("addNameDisplay").value.trim();
-    const file_url = document.getElementById("addFileURL").value;
+    const file_url = document.getElementById("addFileURL").value.trim();
 
     if (!name_display) return alert("⚠️ Vui lòng nhập tên nhạc");
     if (!file_url) return alert("⚠️ Vui lòng tên file");
