@@ -162,7 +162,7 @@ let supabase; // 👈 biến toàn cục
 
   window.openAddPopup = function () {
     document.getElementById("newTemplatename").value = "";
-    document.getElementById("newFoldername").value = "";
+    document.getElementById("newFoldername").value = randomString(5);
     document.getElementById("newDecription").value = "";
     document.getElementById("newStatus").value = "0";
     document.getElementById("addPopupOverlay").style.display = "flex";
@@ -200,4 +200,22 @@ let supabase; // 👈 biến toàn cục
   window.closeAddPopup = function () {
     document.getElementById("addPopupOverlay").style.display = "none";
   };
+
+  function randomString(length = 5) {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  // Gán tự động khi trang load
+  document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("newFoldername");
+    if (input) {
+      input.value = randomString(5);
+    }
+  });
 })();
