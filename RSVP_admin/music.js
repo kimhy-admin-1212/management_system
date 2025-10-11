@@ -16,6 +16,9 @@ let supabase; // 👈 biến toàn cục
 
   let allThemes = [];
 
+  let currentPage = 1;
+  const itemsPerPage = 10; // 👈 số bản ghi mỗi trang
+
   async function loadDataFromTable() {
     const { data, error } = await supabase
       .from("music_list")
@@ -38,31 +41,99 @@ let supabase; // 👈 biến toàn cục
     const tbody = document.getElementById("rsvpTableBody");
     tbody.innerHTML = "";
 
-    data.forEach((item, index) => {
+    // 📄 Tính toán phân trang
+    const totalItems = data.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedData = data.slice(startIndex, startIndex + itemsPerPage);
+
+    paginatedData.forEach((item, index) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td class="p-2 text-center">${index + 1}</td>
-        <td class="p-2 text-center">${item.name_display}</td>
-        <td class="p-2 text-center">${item.file_url}</td>
+      <td class="p-2 text-center">${startIndex + index + 1}</td>
+      <td class="p-2 text-center">${item.name_display}</td>
+      <td class="p-2 text-center">${item.file_url}</td>
 
-        <td class="p-2 align-middle bg-transparent border-b-0 whitespace-nowrap shadow-transparent text-center adminOnly">
-        <a class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400" href="#" onclick="editTheme(${
+      <td class="p-2 align-middle bg-transparent border-b-0 whitespace-nowrap shadow-transparent text-center adminOnly">
+        <a class="text-xs font-semibold text-slate-400" href="#" onclick="editTheme(${
           item.id
         })">✏️ Sửa</a>
-          <a class="text-xs font-semibold leading-tight dark:text-white dark:opacity-80 text-slate-400" href="#"
-            onclick="deleteEntry(${item.id}, '${item.name_display.replace(
-        /'/g,
-        "\\'"
-      )}')">🗑️ Xoá</a>
-        </td>
-      `;
+        <a class="text-xs font-semibold text-slate-400 ml-2" href="#" onclick="deleteEntry(${
+          item.id
+        }, '${item.name_display.replace(/'/g, "\\'")}')">🗑️ Xoá</a>
+      </td>
+    `;
       tbody.appendChild(tr);
     });
 
-    // 👇 Xử lý ẩn/hiện sau khi render
+    // 👇 Hiển thị/ẩn nút admin
     document.querySelectorAll(".adminOnly").forEach((el) => {
       el.style.display = user2?.role === 0 ? "table-cell" : "none";
     });
+
+    // 🔢 Render pagination controls
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(totalPages) {
+    const containerId = "paginationControls";
+    let container = document.getElementById(containerId);
+
+    // Nếu chưa có container thì tạo
+    if (!container) {
+      container = document.createElement("div");
+      container.id = containerId;
+      container.className = "flex justify-center items-center my-6 space-x-4";
+      document
+        .querySelector(".flex-auto.px-0.pt-0.pb-2") // chèn dưới bảng
+        .appendChild(container);
+    }
+
+    container.innerHTML = ""; // Xoá nội dung cũ
+
+    // Nút "Trang trước"
+    const prevBtn = document.createElement("button");
+    prevBtn.innerText = "← Trước";
+    prevBtn.className =
+      "px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50";
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderData(allThemes);
+      }
+    };
+    container.appendChild(prevBtn);
+
+    // Hiển thị số trang
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement("button");
+      btn.innerText = i;
+      btn.className =
+        "px-3 py-1 rounded " +
+        (i === currentPage
+          ? "bg-blue-500 text-white"
+          : "bg-gray-200 hover:bg-gray-300");
+      btn.onclick = () => {
+        currentPage = i;
+        renderData(allThemes);
+      };
+      container.appendChild(btn);
+    }
+
+    // Nút "Trang sau"
+    const nextBtn = document.createElement("button");
+    nextBtn.innerText = "Sau →";
+    nextBtn.className =
+      "px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50";
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderData(allThemes);
+      }
+    };
+    container.appendChild(nextBtn);
   }
 
   // ✅ Event xoá
