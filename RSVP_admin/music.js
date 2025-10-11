@@ -83,7 +83,9 @@ let supabase; // 👈 biến toàn cục
     if (!container) {
       container = document.createElement("div");
       container.id = containerId;
-      container.className = "flex justify-center items-center my-6 space-x-4";
+      container.className =
+        "flex flex-wrap justify-center items-center gap-3 my-6";
+
       document
         .querySelector(".flex-auto.px-0.pt-0.pb-2") // chèn dưới bảng
         .appendChild(container);
